@@ -18,7 +18,9 @@
 
 ## 自动下载与还原
 
-需要 Python 3.11 或更新版本，不需要第三方 Python 依赖。在仓库根目录执行：
+需要 Python 3.11 或更新版本，不需要第三方 Python 依赖。可以克隆仓库后在根目录执行以下命令；也可以仅从 Release 下载 `download.py` 与 `manifest.json` 并放在同一目录，再运行 `python download.py`。
+
+在仓库根目录执行：
 
 ```bash
 # 下载全部三个数据集，验证分卷后还原原始压缩包

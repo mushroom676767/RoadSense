@@ -1,251 +1,86 @@
 # 2026年集创赛紫光同创赛道国家二等奖
 
-面向车牌识别与行人闯红灯检测的端云协同项目。系统由 **RK3568 端、FPGA 端和云服务器端**组成，提供本地视频显示、车牌定位与识别、违规目标检测、远程模式控制和事件归档。
+**基于紫光 FPGA + RK3568 的视频流智能交通识别系统**
 
-云服务器端配套一个运行在 Windows 电脑上的 **Device Agent**：它连接 RK3568、转发视频并执行云端下发的控制命令。Agent 与云平台共用 `云服务器/RK3568-Upper-Computer/` 中的代码，部署在不同机器上。
+本项目将车牌识别、行人闯红灯检测和云端管理结合起来：RK3568 完成视频采集与 NPU 推理，FPGA 在协同模式下提供车牌候选区域，云端网页用于查看视频、管理事件和远程切换运行模式。
 
-> **源码范围**：本仓库包含 RK3568 程序、云平台和 Windows Agent，不提供 FPGA 硬件工程。FPGA 对接协议依据现有接收端实现说明；整体硬件方案可参考下方三个比赛阶段的技术文档。
+[快速开始](#快速开始) · [部署与联调](docs/DEPLOYMENT.md) · [技术文档](#技术文档) · [数据集](#数据集) · [问题反馈](https://github.com/liuchang925/jichuang-rk3568-vision/issues)
+
+## 项目亮点
+
+- **三种运行模式**：RK3568 独立车牌识别、FPGA ROI 串口协同识别、行人闯红灯检测。
+- **板端视频与推理分离**：使用 V4L2 / MPP 采集、RGA 预处理、RKNN 推理及 DRM 显示，异步处理并优先保留最新任务。
+- **端云协同**：Windows Agent 将板端视频编码为 H.264，经 SRT 上传；浏览器通过 WebRTC 查看，云端支持 LL-HLS 备用播放。
+- **可管理的识别结果**：云平台提供管理员/访客权限、模式控制、日志、事件归档、截图及 CSV 导出；Agent 持久化待发送事件，云端确认后移除。
+- **配套资料**：三个比赛阶段的原始技术文档，以及合计 32.91 GB 的数据包、校验清单和下载还原工具。
+
+默认采集/显示参数为 **1920×1080、MJPG、60 fps**。该参数不等同于模型推理或公网播放帧率，实际性能需在对应硬件和网络环境下测量。
 
 ## 目录
 
-- [系统组成与运行链路](#系统组成与运行链路)
-- [源码目录](#源码目录)
+- [系统组成](#系统组成)
+- [开源内容](#开源内容)
+- [快速开始](#快速开始)
+- [使用示例](#使用示例)
 - [技术文档](#技术文档)
-- [RK3568 端](#rk3568-端)
-- [FPGA 端](#fpga-端)
-- [云服务器端](#云服务器端)
-- [端间通信与联调](#端间通信与联调)
+- [数据集](#数据集)
+- [项目结构](#项目结构)
 - [测试与验证](#测试与验证)
-- [常见问题](#常见问题)
-- [开源范围与许可证](#开源范围与许可证)
+- [参与贡献](#参与贡献)
+- [问题反馈](#问题反馈)
+- [许可证](#许可证)
+- [致谢与参考](#致谢与参考)
 
-## 系统组成与运行链路
+## 系统组成
 
-| 部分 | 主要职责 | 对应代码 |
+| 部分 | 职责 | 代码位置 |
 | --- | --- | --- |
-| RK3568 端 | 视频采集、RGA 预处理、NPU 推理、车牌 OCR、本地显示、结果发布 | `RK3568/final/` |
-| FPGA 端 | 在串口协同模式下提供车牌候选 ROI，交给 RK3568 进一步识别 | 接收协议见 `RK3568/final/core/serial_io.py`；硬件工程不提供 |
-| 云服务器端 | 网页展示、身份认证、设备控制、事件与截图管理、媒体分发 | `云服务器/RK3568-Upper-Computer/` |
-| Windows Agent（云端配套） | 接收板端 JPEG 与元数据，通过 SSH 控制板端，通过 SRT 与 WSS 连接云端 | 同目录下的 `agent.py`、`backend/device_agent.py` |
+| RK3568 端 | 视频采集、检测/OCR、本地显示、识别结果发布 | [`RK3568/final/`](RK3568/final/) |
+| FPGA 端 | 串口协同模式下提供 0～4 个候选 ROI | 本仓库提供[接收协议](RK3568/final/core/serial_io.py)，不包含 FPGA 硬件工程 |
+| 云服务器端 | 网页、认证、远程控制、事件归档和媒体分发 | [`云服务器/RK3568-Upper-Computer/`](云服务器/RK3568-Upper-Computer/) |
+| Windows Agent | 接收板端数据、转发视频、通过 SSH 执行云端控制命令 | 同目录下的 [`agent.py`](云服务器/RK3568-Upper-Computer/agent.py) |
 
-完整运行过程如下：
+Windows Agent 是云端方案的配套组件，运行在连接 RK3568 的 Windows 电脑上，与 Linux 云服务器分开部署。
 
-1. RK3568 从视频采集设备获取图像；在 FPGA 串口模式下，同时接收 FPGA 发来的候选区域。
-2. RK3568 完成检测、识别和结果叠加，通过 DRM 输出本地画面，并按需向 Windows Agent 发布 JPEG 和识别元数据。
-3. Windows Agent 将视频编码为 H.264，通过 SRT 上传 MediaMTX；通过 WSS 同步状态、日志和事件。
-4. 浏览器访问云端 Flask/Vue 平台，通过 WebRTC 查看视频；云端链路支持 LL-HLS 备用播放。
-5. 管理员在网页切换模式后，云端经 Agent 下发操作，Agent 再通过 SSH 启动或停止 RK3568 程序。
+运行时，RK3568 向 Agent 发布 JPEG 与识别元数据；Agent 经 SRT 将视频发送到 MediaMTX，经 WSS 同步状态和事件。浏览器通过云端平台观看和控制；控制命令经 Agent 的 SSH 连接落实到板端。
 
-视频、识别元数据和控制命令分别传输。板端采集/显示的默认目标为 1080p60；检测、OCR 和公网播放的实际帧率取决于模型、设备与网络条件。
+## 开源内容
 
-## 源码目录
-
-```text
-.
-├── README.md
-├── LICENSE
-├── docs/technical/                # 初赛、分赛区决赛、全国总决赛 PDF
-├── RK3568/
-│   ├── README.md
-│   └── final/
-│       ├── fpga_ai.py              # RK3568 独立车牌识别入口
-│       ├── fpga_serial.py          # FPGA ROI 串口协同识别入口
-│       ├── people_redlight.py      # 行人闯红灯检测入口
-│       ├── plate_det/              # 车牌运行时、定位、透视矫正与 OCR
-│       ├── people_det/             # 行人/信号灯/违规目标检测
-│       ├── core/                   # 采集、显示、串口、推流与并发基础设施
-│       │   └── native/             # 原生 C 库与 Makefile
-│       ├── rknn_models/            # 模型放置目录，权重未提交
-│       ├── tests/                  # 板端逻辑与接口测试
-│       ├── tools/                  # 性能测试工具
-│       └── docs/                   # 架构、模型、串口与部署说明
-└── 云服务器/
-    └── RK3568-Upper-Computer/
-        ├── app.py                 # 云平台/独立上位机入口
-        ├── agent.py               # Windows Device Agent 入口
-        ├── config.py              # 环境变量与运行模式配置
-        ├── backend/               # 认证、接收、SSH、媒体、事件和 Agent 通道
-        ├── frontend/              # Vue 3 + Element Plus + Vite 前端
-        ├── deploy/                # Agent、Nginx、MediaMTX、Coturn、systemd 模板
-        ├── scripts/               # 配置生成、部署、数据迁移和启动脚本
-        ├── tests/                  # 上位机后端测试
-        ├── requirements*.txt      # 不同部署角色的 Python 依赖
-        └── .env.example            # 配置示例
-```
-
-本仓库不包含 FPGA 硬件工程。`fpga_ai.py` 和 `fpga_serial.py` 均为 **RK3568 上执行的 Python 程序**。
-
-## 技术文档
-
-三个阶段的原始 PDF 均已收录在 [`docs/technical/`](docs/technical/README.md)：
-
-| 阶段 | 文档 | 页数 |
-| --- | --- | --- |
-| 初赛 | [初赛技术文档](docs/technical/preliminary.pdf) | 53 |
-| 分赛区决赛 | [分赛区决赛技术文档](docs/technical/regional-final.pdf) | 96 |
-| 全国总决赛 | [全国总决赛技术文档](docs/technical/national-final.pdf) | 63 |
-
-文档包含硬件方案、算法设计、模型训练与量化、FPGA 模块、性能分析及仿真测试，展示不同比赛阶段的设计演进。历史方案、参数和性能记录以各文档对应阶段为准；当前程序接口以本仓库源码为准。
-
-## RK3568 端
-
-### 三种运行模式
-
-| 模式 | 启动入口 | 功能 | 发布流 ID |
-| --- | --- | --- | --- |
-| 独立车牌识别 | `fpga_ai.py` | 全图 Pose26 检测与角点定位、单双层车牌预处理、OCR | `plate_ai` |
-| FPGA 串口协同 | `fpga_serial.py` | 接收 0～4 个 ROI，扩展区域并组成四槽输入，执行 Pose26 与 OCR | `plate_serial` |
-| 行人闯红灯检测 | `people_redlight.py` | 识别人、信号灯、违规目标等类别，并输出检测结果与统计 | `people_redlight` |
-
-车牌检测与识别实现位于 [`plate_det`](RK3568/final/plate_det/)，行人模式位于 [`people_det`](RK3568/final/people_det/)。行人模型包含 `person`、`red_light`、`green_light`、`run_red_light`、`yellow_light`、`car`、`bicycle` 和 `motorcycle` 类别，违规结果依据模型输出的类别生成。
-
-### 视频与推理实现
-
-- **采集**：V4L2 获取 MJPEG，经 MPP 解码为 NV12 DMA-BUF 帧。
-- **预处理**：RGA 执行缩放、格式转换及 ROI 组图。
-- **推理**：默认通过项目原生 C 封装调用 RKNN Runtime。
-- **车牌识别**：根据角点进行透视矫正，双层车牌拆分拼接后送入 OCR。
-- **显示**：DRM Atomic 管理视频与叠加层；本地视频文件模式另有 DRM-RGA 路径。
-- **并发**：采集、处理和显示异步运行，队列优先保留最新任务，避免旧帧积压。
-
-串口 ROI 会绑定接收时可用的最新视频帧。现有串口报文不包含视频帧号或时间戳，因此该链路没有基于报文帧号的逐帧同步。
-
-### 环境准备
-
-需要 RK3568 Linux 板卡及其匹配的驱动、SDK 和开发库：
-
-| 类型 | 依赖 |
+| 内容 | 发布方式 |
 | --- | --- |
-| Python | Python 3、NumPy、OpenCV；串口模式另需 pyserial |
-| 构建工具 | GCC、Make、pkg-config |
-| 原生库 | Rockchip MPP、libv4l2、libdrm、librga、FreeType、RKNN Runtime |
-| RKNN 文件 | `librknnrt.so` 与匹配的 `rknn_api.h` |
-| 设备 | 默认视频节点 `/dev/video9`，串口节点 `/dev/ttyUSB0`，以及可用的 DRM 显示设备 |
+| RK3568、云平台和 Agent 源码 | 本仓库，可通过 Git 克隆 |
+| 初赛、分赛区决赛、全国总决赛技术文档 | [`docs/technical/`](docs/technical/README.md) 中的原始 PDF |
+| CRPD、整帧 Pose、ROI Pose 数据包 | [Datasets v1 Release](https://github.com/liuchang925/jichuang-rk3568-vision/releases/tag/datasets-v1) 附件 |
+| FPGA 硬件工程、模型权重 | 不随本仓库提供 |
 
-板端 Python 依赖可按现有系统环境安装；OpenCV 和原生开发库建议使用与板卡镜像兼容的版本。
+## 快速开始
+
+### 1. 获取源码
 
 ```bash
-python3 -m pip install numpy opencv-python pyserial
+git clone https://github.com/liuchang925/jichuang-rk3568-vision.git
+cd jichuang-rk3568-vision
 ```
 
-源码默认使用 `/home/cat/RK3568/final` 作为板端工作目录。AI 模式与串口检测模型使用固定路径；更换目录时需同步检查模型路径常量和上位机的 `RK_WORK_DIR`。
+如果只阅读方案，可以直接打开下方[技术文档](#技术文档)；如果只需要数据，可按[数据集](#数据集)一节下载，不必先部署整套系统。
 
-### 准备模型与构建
+### 2. 在 RK3568 上运行
 
-将自行准备的模型放入 `RK3568/final/rknn_models/`：
+需要 RK3568 Linux 板卡、匹配的 RKNN Runtime 与 MPP/RGA/DRM 等开发库，以及相应的模型。Python 侧使用 NumPy、OpenCV，串口模式另需 pyserial。
 
-| 模型文件 | 用途 | 输入宽 × 高 |
-| --- | --- | --- |
-| `plate_ai_pose26_512x288_int8.rknn` | 独立车牌检测与角点定位 | 512 × 288 |
-| `plate_serial_roi_pose26_320x160_w8a8_fp16.rknn` | FPGA ROI 四槽检测 | 320 × 160 |
-| `plate_ocr_168x48_int8.rknn` | 车牌字符识别 | 168 × 48 |
-| `people_redlight_yolov5_384x640_int8.rknn` | 行人闯红灯检测 | 384 × 640 |
-
-串口检测模型启动时会校验 SHA-256 和输入输出张量；不能仅通过重命名替换成其他模型。参考哈希见[模型说明](RK3568/final/rknn_models/README.md)。
-
-在 RK3568 上构建原生库：
+将 `RK3568/` 目录部署到板端 `/home/cat/RK3568/`，把[模型清单](RK3568/final/rknn_models/README.md)中的文件放入 `final/rknn_models/`。在板端执行：
 
 ```bash
 cd /home/cat/RK3568/final
 make -C core/native all
-# rknn_api.h 不在默认目录时，显式指定实际头文件目录：
-# make -C core/native all RKNN_INCLUDE=/path/to/include
-```
-
-构建目标为 `librkhdmi_capture.so`、`librkdrm_atomic.so`、`librkdrm_display.so`、`librga_preprocess.so` 和 `librknn_runtime.so`。Makefile 默认 RKNN 头文件目录为 `/home/cat/.local/include`。
-
-### 启动程序
-
-以下三种模式选择一种运行：
-
-```bash
-cd /home/cat/RK3568/final
-
-# RK3568 独立车牌识别
 python3 fpga_ai.py
-
-# FPGA 候选 ROI + RK3568 识别
-python3 fpga_serial.py --port /dev/ttyUSB0 --baud 115205
-
-# 行人闯红灯检测，默认从 HDMI 采集
-python3 people_redlight.py
 ```
 
-三个入口默认使用 `1920×1080 / MJPG / 60 fps` 采集参数。设备节点可通过 `--hdmi-device` 调整。行人模式支持视频文件，例如：
+默认视频节点为 `/dev/video9`。设备路径、SDK 库、模型固定路径及构建参数见[详细部署说明](docs/DEPLOYMENT.md#rk3568-端)。完整运行需要实际设备和模型。
 
-```bash
-python3 people_redlight.py /path/to/video.mp4
-```
+### 3. 准备 Windows Agent
 
-完整参数使用对应入口的 `--help` 查看。板端基础说明见 [`RK3568/README.md`](RK3568/README.md)。
-
-## FPGA 端
-
-### 与 RK3568 的分工
-
-串口协同模式下，FPGA 提供全画面的车牌候选矩形；RK3568 对候选区域做后续定位、单双层车牌预处理和 OCR，并输出车牌号、置信度及叠加结果。
-
-接收实现见 [`core/serial_io.py`](RK3568/final/core/serial_io.py)，处理流程见 [`plate_det/serial_runtime.py`](RK3568/final/plate_det/serial_runtime.py)。当前源码无法确认 FPGA 内部如何产生候选区域，也无法提供具体的硬件综合和烧录命令。
-
-### 串口协议
-
-当前帧格式为：
-
-```text
-0xAA | count | ROI[0] | ... | ROI[count-1]
-ROI = x1 | y1 | x2 | y2
-```
-
-| 字段 | 长度 | 说明 |
-| --- | --- | --- |
-| 帧头 | 1 字节 | 固定为 `0xAA` |
-| `count` | 1 字节 | 无符号整数，取值 0～4 |
-| 每个 ROI | 8 字节 | `x1, y1, x2, y2`，每个值为小端 `uint16` |
-
-- 坐标基于 **1920×1080 完整画面**。
-- 必须满足 `0 ≤ x1 < x2 ≤ 1920`、`0 ≤ y1 < y2 ≤ 1080`。
-- `x2` 和 `y2` 为排他边界。
-- 单帧总长度为 `2 + 8 × count` 字节，最多 34 字节。
-- `AA 00` 表示没有 ROI，RK3568 会清空车牌结果。
-- 非法数量会触发重新搜索帧头；非法坐标会拒绝整包并清空旧结果。
-- 当前协议没有校验和、帧尾、时间戳或帧号字段。
-
-例如，一个 ROI 为 `(100, 200, 401, 301)` 时，发送的十六进制字节为：
-
-```text
-AA 01 64 00 C8 00 91 01 2D 01
-```
-
-**代码中的默认波特率是 `115205`**，可通过 `--baud` 修改，联调时必须与 FPGA 实际发送配置一致。默认串口节点为 `/dev/ttyUSB0`。
-
-协议与模型槽位的详细约定见 [FPGA ROI 串口说明](RK3568/final/docs/SERIAL_ROI_POSE26.md)。
-
-## 云服务器端
-
-### 平台功能与技术栈
-
-- **前端**：Vue 3、Element Plus、Vite、Socket.IO Client、hls.js。
-- **后端**：Flask、Flask-SocketIO、Flask-JWT-Extended、SQLite。
-- **媒体服务**：MediaMTX 接收 SRT 并提供 WebRTC / LL-HLS；Nginx 提供 HTTPS 与反向代理，Coturn 用于受限网络下的中继。
-- **权限**：管理员可以控制设备；访客可以查看实时数据与事件。
-- **事件归档**：保存识别事件、元数据和截图，支持查询与 CSV 导出。
-- **可靠传输**：Agent 将待发送事件持久化至本地 SQLite 队列，云端确认后再移除。
-
-### 部署角色
-
-`config.py` 使用 `DEPLOYMENT_ROLE` 区分角色：
-
-| 角色 | 入口 | 部署位置与作用 |
-| --- | --- | --- |
-| `cloud` | `app.py` | Linux 云服务器；提供网页/API，并通过 Agent 控制设备 |
-| `agent` | `agent.py` | 连接 RK3568 的 Windows 电脑；接收板端数据、编码视频并执行 SSH 控制 |
-| `standalone` | `app.py` | 独立上位机模式；直接连接 RK3568，适合本地联调或原有部署方式 |
-
-完整公网方案需要云端平台、媒体服务和 Windows Agent 配合。仓库内的 Docker Compose 提供管理应用构建配置，完整媒体与公网服务的部署参照 `deploy/` 模板及部署文档。
-
-### 安装依赖和构建前端
-
-以下命令在 Windows PowerShell 中、`云服务器/RK3568-Upper-Computer` 目录执行。建议使用 Python 3.12，以及 Node.js 20.19+ 或 22.12+。
+在连接 RK3568 的 Windows 电脑上，进入 `云服务器/RK3568-Upper-Computer`。建议 Python 3.12、Node.js 20.19+ 或 22.12+；视频转发需要 NVIDIA GPU 和支持 NVENC/SRT 的 FFmpeg。
 
 ```powershell
 python -m venv .venv
@@ -255,31 +90,7 @@ npm ci --prefix frontend
 npm run build --prefix frontend
 ```
 
-编辑 `.env`，将占位密码、Token 和示例地址替换为自己的配置。主要配置分组如下：
-
-| 配置 | 用途 |
-| --- | --- |
-| `SSH_HOST`、`SSH_PORT`、`SSH_USER`、`SSH_PASSWORD`、`RK_WORK_DIR` | Agent 连接并启动 RK3568 程序 |
-| `PUBLISH_URL`、`PUBLISH_TOKEN` | RK3568 向 Agent 回传数据的地址和共享凭据 |
-| `PUBLIC_IP`、`PRIVATE_IP`、`ACME_EMAIL` | 云端地址与证书配置 |
-| `AGENT_ID`、`AGENT_TOKEN` | Agent 身份及云端认证 |
-| `JWT_SECRET_KEY`、`ADMIN_*`、`VISITOR_*` | 网页认证和初始账号 |
-| `MEDIA_MTX_PUBLISH_*`、`MEDIA_MTX_READ_*`、`MEDIA_MTX_ADMIN_*` | 独立的媒体发布、读取和管理账号 |
-| `MEDIA_MTX_SRT_PASSPHRASE` | SRT 上行口令 |
-| `WEBRTC_TURN_USERNAME`、`WEBRTC_TURN_CREDENTIAL` | TURN 用户和凭据 |
-
-`203.0.113.10`、`10.0.0.10` 和 `example.com` 均为示例值。`PUBLISH_URL` 必须是 **RK3568 实际能够访问的 Agent 地址**。
-
-### Windows Agent
-
-Windows 电脑需要 NVIDIA GPU、可用驱动，以及支持 `h264_nvenc` 和 SRT 的 FFmpeg。先检查编码器和协议：
-
-```powershell
-ffmpeg -hide_banner -encoders | Select-String "h264_nvenc"
-ffmpeg -hide_banner -protocols | Select-String "srt"
-```
-
-填写 `.env` 后生成 Agent 环境配置并启动：
+编辑 `.env`，填写自己的 RK3568 SSH、Agent 地址、Token 和云端媒体配置，然后生成配置并启动：
 
 ```powershell
 .\.venv\Scripts\python.exe scripts\render-deployment.py --role agent
@@ -287,28 +98,39 @@ ffmpeg -hide_banner -protocols | Select-String "srt"
 Invoke-RestMethod http://127.0.0.1:5000/health
 ```
 
-生成的配置保存在 `runtime/rendered/agent/agent.env`。启动脚本会加载配置并检查 FFmpeg。正常情况下，健康接口返回 `ok: true`、`role: agent`。
+正常健康响应包含 `ok: true`、`role: agent`。`.env.example` 中的占位值和示例地址必须替换。
 
-### Linux 云服务器
+### 4. 部署云端
 
-云端使用 `requirements-cloud.txt`，生产入口由 `deploy/cloud/rk3568-cloud.service.template` 定义，使用 Gunicorn 启动 Flask 应用。配套服务包括 Nginx、MediaMTX、Coturn 和证书续期任务。
+云端使用 Flask/Vue、Nginx、MediaMTX、Coturn 和 systemd。安装、证书、端口、配置生成、上线与回滚步骤见[云端部署文档](云服务器/RK3568-Upper-Computer/docs/CLOUD_AGENT_DEPLOYMENT.md)。
 
-配置完成后可在 Windows 管理端生成两侧部署文件：
+本项目还有 `standalone` 独立上位机模式。角色区别及完整联调顺序见[部署与联调](docs/DEPLOYMENT.md#云服务器端)。
 
-```powershell
-.\.venv\Scripts\python.exe scripts\render-deployment.py --role all
-```
+## 使用示例
 
-输出写入 `runtime/rendered/`。云端安装、Canary 验证、上传、激活及回滚步骤见 [云端部署文档](云服务器/RK3568-Upper-Computer/docs/CLOUD_AGENT_DEPLOYMENT.md)。部署脚本的 `-CloudHost` 默认值也是示例 IP，实际调用时应传入自己的云服务器地址。
+### 选择板端模式
 
-## 端间通信与联调
+在板端 `/home/cat/RK3568/final` 中，以下三种模式选择一种运行：
 
-### RK3568 向 Agent 发布
+| 任务 | 命令 | 发布流 ID |
+| --- | --- | --- |
+| 独立车牌识别 | `python3 fpga_ai.py` | `plate_ai` |
+| FPGA ROI 协同识别 | `python3 fpga_serial.py --port /dev/ttyUSB0 --baud 115205` | `plate_serial` |
+| 行人闯红灯检测 | `python3 people_redlight.py` | `people_redlight` |
 
-三个板端入口均支持 `--publish`、`--publish-token`、`--publish-stream`、`--publish-fps` 和 `--publish-quality`。默认关闭发布。以下以独立车牌模式为例，在板端设置与 Agent 一致的 Token 后运行：
+串口默认波特率是源码中的 **115205**；应与 FPGA 实际发送配置一致。协议使用 `0xAA` 帧头、0～4 个全图 XYXY ROI、小端 `uint16` 坐标，详细约定见[串口说明](RK3568/final/docs/SERIAL_ROI_POSE26.md)。
+
+行人模式也支持本地视频文件：
 
 ```bash
-cd /home/cat/RK3568/final
+python3 people_redlight.py /path/to/video.mp4
+```
+
+### 将板端结果发布给 Agent
+
+设置与 Agent 一致的共享 Token 后，以独立车牌模式为例：
+
+```bash
 export PUBLISH_TOKEN='替换为与Agent一致的共享Token'
 python3 fpga_ai.py \
   --publish http://192.168.137.1:5000 \
@@ -317,20 +139,76 @@ python3 fpga_ai.py \
   --publish-fps 30
 ```
 
-`192.168.137.1` 是直连网络的示例地址，需按实际网络调整。其余两个入口的流 ID 分别使用 `plate_serial` 和 `people_redlight`，必须与模式一致。
+`192.168.137.1` 是示例 Agent 地址，应替换为板端实际可达地址。不同模式的 `--publish-stream` 必须与上表一致。发布默认关闭，启用时 Token 和流 ID 均必填。
 
-发布器向 `POST /api/ingest` 发送二进制请求，认证头为 `X-Publish-Token`。请求体依次包含 **4 字节大端 JSON 长度、UTF-8 JSON 元数据、JPEG 数据**。元数据协议版本为 `1`，携带流 ID、模式、帧信息、识别结果、叠加对象和性能指标等。
+所有入口均支持 `--help`。模型、串口格式、发布协议和常见问题集中在[部署与联调](docs/DEPLOYMENT.md)。
 
-发布采用后台线程与最新帧策略；网络错误会触发重连退避，不直接停止本地采集与推理。更多说明见 [上位机发布链路](RK3568/final/docs/RK3568_MANAGER_PUBLISH.md)。
+## 技术文档
 
-### 建议联调顺序
+作品团队为 **ZLC**，队伍编号 **CICC1001862**。三个阶段的 PDF 保留原始内容：
 
-1. 在 RK3568 上单独确认视频输入、原生库构建和模型加载。
-2. 运行 `fpga_ai.py` 或 `people_redlight.py`，确认本地画面与结果。
-3. 接入 FPGA，确认串口设备、波特率、0～4 个 ROI 和坐标范围，再运行 `fpga_serial.py`。
-4. 启动 Windows Agent，确认 `/health` 和板端 `/api/ingest` 回传。
-5. 启动云端服务，确认 Agent 在线、视频可播放、模式控制可返回执行状态。
-6. 验证事件与截图归档，并检查网络中断后的重连和待发送事件补传。
+| 阶段 | 文档 | 页数 |
+| --- | --- | --- |
+| 初赛 | [初赛技术文档](docs/technical/preliminary.pdf) | 53 |
+| 分赛区决赛 | [分赛区决赛技术文档](docs/technical/regional-final.pdf) | 96 |
+| 全国总决赛 | [全国总决赛技术文档](docs/technical/national-final.pdf) | 63 |
+
+建议先读全国总决赛文档了解整体方案，再结合前两个阶段查看设计演进。历史方案与性能记录对应各自比赛阶段，当前命令和接口以源码为准。文件校验值见[文档索引](docs/technical/README.md)。
+
+## 数据集
+
+数据包总大小为 **32,906,449,741 字节（32.91 GB）**，通过 [Datasets v1 Release](https://github.com/liuchang925/jichuang-rk3568-vision/releases/tag/datasets-v1) 发布。
+
+| 数据包 | 大小 | 附件数 | 内容 |
+| --- | --- | --- | --- |
+| `CRPD.zip` | 19.42 GB | 11 | 单车牌、双层车牌及多车牌图片与标注 |
+| `plate_pose.7z` | 13.13 GB | 7 | 整帧车牌 Pose 数据及配置 |
+| `plate_pose_roi.7z` | 0.36 GB | 1 | ROI 车牌 Pose 数据及配置 |
+
+在仓库根目录使用 Python 3.11+ 下载：
+
+```bash
+# 下载全部数据，校验分卷后自动还原原始压缩包
+python datasets/download.py
+
+# 只下载较小的 ROI 数据包
+python datasets/download.py --dataset plate_pose_roi.7z
+```
+
+也可以仅从 Release 下载 `download.py` 和 `manifest.json`，放在同一目录后运行 `python download.py`。
+
+工具支持断点续传，校验每个附件及完整压缩包的 SHA-256。默认保存到 `datasets/downloads/`，还原成功后默认删除分卷并保留完整压缩包；全部下载和还原建议预留至少 **50 GB** 空间，解压还需额外空间。手动还原、统计与校验值见[数据集说明](datasets/README.md)。
+
+## 项目结构
+
+```text
+.
+├── RK3568/final/
+│   ├── fpga_ai.py              # 独立车牌识别入口
+│   ├── fpga_serial.py          # FPGA ROI 串口协同入口
+│   ├── people_redlight.py      # 行人闯红灯检测入口
+│   ├── plate_det/             # 车牌定位、预处理与 OCR
+│   ├── people_det/            # 行人与违规目标检测
+│   ├── core/native/           # 采集、显示、RGA、RKNN 原生 C 库
+│   ├── rknn_models/           # 模型放置目录（权重不提交）
+│   ├── tests/                 # 板端测试
+│   └── docs/                  # 板端架构、接口和性能说明
+├── 云服务器/RK3568-Upper-Computer/
+│   ├── app.py                 # 云平台 / 独立上位机入口
+│   ├── agent.py               # Windows Agent 入口
+│   ├── backend/               # 认证、控制、事件和媒体处理
+│   ├── frontend/              # Vue 前端及测试
+│   ├── deploy/                # 云服务与 Agent 配置模板
+│   ├── scripts/               # 部署、启动和数据迁移脚本
+│   └── .env.example           # 配置示例
+├── docs/
+│   ├── DEPLOYMENT.md          # 完整部署、协议与联调说明
+│   └── technical/             # 三个比赛阶段的原始 PDF
+├── datasets/                  # 下载工具、附件清单与工具测试
+└── LICENSE
+```
+
+更多代码说明：[RK3568 README](RK3568/README.md) · [板端架构](RK3568/final/docs/CODE_ARCHITECTURE.md) · [上位机 README](云服务器/RK3568-Upper-Computer/README.md)。
 
 ## 测试与验证
 
@@ -348,37 +226,39 @@ npm test --prefix frontend
 npm run build --prefix frontend
 ```
 
-板端测试依赖 Python 图像处理等组件；完整推理、HDMI、串口、显示与性能验收仍需要实际 RK3568、FPGA、采集设备和对应模型。视频显示帧率、NPU 推理耗时和公网播放帧率应分别测量。
+数据下载工具测试，在仓库根目录执行：
 
-进一步阅读：
+```bash
+python -m unittest discover -s datasets/tests -v
+```
 
-- [板端代码架构](RK3568/final/docs/CODE_ARCHITECTURE.md)
-- [FPGA ROI 串口协议与模型](RK3568/final/docs/SERIAL_ROI_POSE26.md)
-- [Native 多应用运行说明](RK3568/final/docs/RK3568_NATIVE_MULTI_APP.md)
-- [上位机 README](云服务器/RK3568-Upper-Computer/README.md)
-- [云端与 Agent 部署](云服务器/RK3568-Upper-Computer/docs/CLOUD_AGENT_DEPLOYMENT.md)
+单元测试和静态检查不替代硬件验收。完整测试需要实际 RK3568、FPGA、视频采集设备及模型；性能指标应注明设备、驱动、模型和测量方法。
 
-## 常见问题
+## 参与贡献
 
-| 现象 | 优先检查 |
-| --- | --- |
-| 视频设备打不开 | 实际 `/dev/video*` 节点、设备权限、MJPG 格式和 1920×1080 采集能力 |
-| 原生库无法加载 | 是否在 RK3568 上构建，RKNN/MPP/RGA/DRM 库是否匹配，动态库搜索路径是否正确 |
-| 模型不存在或校验失败 | 固定模型目录、文件名、SHA-256 和张量规格 |
-| 串口有数据但识别不到 ROI | 波特率、`0xAA` 帧头、数量、小端坐标、排他边界和全图尺寸 |
-| 本地正常但 Agent 无数据 | `PUBLISH_URL` 的可达性、Token 和流 ID 是否一致 |
-| 网页有状态但没有视频 | FFmpeg 的 NVENC/SRT 支持、MediaMTX、WebRTC/TURN 和云安全组 |
-| 网页不能切换模式 | 登录账号是否为管理员、Agent 是否在线、RK3568 SSH 配置及设备权限 |
+欢迎提交文档修正、问题复现、兼容性改进和代码修复：
 
-## 开源范围与许可证
+1. 先通过 [Issues](https://github.com/liuchang925/jichuang-rk3568-vision/issues) 说明问题或修改目标。
+2. Fork 仓库，创建自己的修改分支，保持一次提交围绕一个问题。
+3. 运行与修改相关的测试，必要时补充能验证行为的测试。
+4. 提交 Pull Request，说明改动原因、验证结果和实机测试环境；未完成的硬件验证请注明。
 
-本仓库发布现有 RK3568、云平台与 Windows Agent 源码，以及已确认的 FPGA 对接协议。FPGA 硬件工程不提供。
+数据包使用 Release 分发，依赖环境、模型权重、编译产物和本地运行数据不纳入源码提交。
 
-以下资源不纳入 Git，需要自行准备或在运行时生成：
+## 问题反馈
 
-- `CRPD.zip`、`plate_pose.7z`、`plate_pose_roi.7z` 等图片和标注数据集。
-- RKNN 模型权重及 `.so` 等编译产物。
-- Python/Node.js 依赖环境、构建输出和缓存。
-- `.env`、运行时秘密配置、密钥、数据库、事件截图及日志。
+请在 [GitHub Issues](https://github.com/liuchang925/jichuang-rk3568-vision/issues) 提交问题或建议。硬件相关问题请附上板卡与系统镜像、RKNN/驱动版本、实际启动命令、复现步骤、预期结果和实际结果。
 
-项目自有源码按 [MIT License](LICENSE) 开源。第三方库、硬件 SDK、模型和数据集遵循各自许可证。
+先排查设备节点、模型路径与校验值、串口参数、Agent 地址/Token，以及媒体服务状态。更完整的[常见问题](docs/DEPLOYMENT.md#常见问题)可用于定位。
+
+## 许可证
+
+项目自有源码采用 [MIT License](LICENSE)，使用、修改和分发时请保留版权及许可声明。
+
+第三方库、硬件 SDK、模型和数据集遵循各自许可证。数据包未附独立许可证，源码 MIT 许可证不重新授权数据集；模型权重和 FPGA 硬件工程不在本次发布范围内。
+
+## 致谢与参考
+
+本项目使用 Rockchip RKNN/MPP/RGA、Flask、Vue、MediaMTX 等软硬件生态组件。感谢提供相关工具、库与技术资料的开发者。
+
+README 的内容组织参考了[《如何编写 README.md：打造出色的开源项目文档》](https://zhuanlan.zhihu.com/p/679934993)，结合本项目补充了上手步骤、使用示例、贡献方式与反馈入口。
