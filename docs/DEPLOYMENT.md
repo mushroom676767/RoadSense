@@ -295,4 +295,3 @@ npm run build --prefix frontend
 | 本地正常但 Agent 无数据 | `PUBLISH_URL` 的可达性、Token 和流 ID 是否一致 |
 | 网页有状态但没有视频 | FFmpeg 的 NVENC/SRT 支持、MediaMTX、WebRTC/TURN 和云安全组 |
 | 网页不能切换模式 | 登录账号是否为管理员、Agent 是否在线、RK3568 SSH 配置及设备权限 |
-
