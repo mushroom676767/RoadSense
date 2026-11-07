@@ -49,3 +49,10 @@ __pycache__/
 .vscode/
 Thumbs.db
 .DS_Store
+
+# Downloaded Release dataset assets
+/datasets/downloads/
+*.part[0-9]*
+*.partial
+*.restoring
+*.failed

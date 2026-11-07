@@ -1,0 +1,161 @@
+{
+  "tag": "datasets-v1",
+  "part_size_bytes": 1900000000,
+  "release_url": "https://github.com/liuchang925/jichuang-rk3568-vision/releases/tag/datasets-v1",
+  "archives": [
+    {
+      "name": "plate_pose_roi.7z",
+      "size_bytes": 361746641,
+      "sha256": "c0d38330dd7e7129e2a6a320ec733ad8c66cff2c19132d13ddef5a3041080c9f",
+      "assets": [
+        {
+          "name": "plate_pose_roi.7z",
+          "offset_bytes": 0,
+          "size_bytes": 361746641,
+          "sha256": "c0d38330dd7e7129e2a6a320ec733ad8c66cff2c19132d13ddef5a3041080c9f",
+          "url": "https://github.com/liuchang925/jichuang-rk3568-vision/releases/download/datasets-v1/plate_pose_roi.7z"
+        }
+      ]
+    },
+    {
+      "name": "CRPD.zip",
+      "size_bytes": 19416634858,
+      "sha256": "09a79865d5dc9a24d2e1e729d15c88cee6688268edbe7e49f646211c535e8fb3",
+      "assets": [
+        {
+          "name": "CRPD.zip.part001",
+          "offset_bytes": 0,
+          "size_bytes": 1900000000,
+          "sha256": "d409132bb2fc2be9cd84991c7305ef23817c0743ab492243d756a7ef934e8c0a",
+          "url": "https://github.com/liuchang925/jichuang-rk3568-vision/releases/download/datasets-v1/CRPD.zip.part001"
+        },
+        {
+          "name": "CRPD.zip.part002",
+          "offset_bytes": 1900000000,
+          "size_bytes": 1900000000,
+          "sha256": "714183b58cb8beff7a0b51740a7b26c78e5f025816d5ad4db6d2c0ad98085b15",
+          "url": "https://github.com/liuchang925/jichuang-rk3568-vision/releases/download/datasets-v1/CRPD.zip.part002"
+        },
+        {
+          "name": "CRPD.zip.part003",
+          "offset_bytes": 3800000000,
+          "size_bytes": 1900000000,
+          "sha256": "7b0f3c564dd230f00cd042b77434da863a6708c5dfa74ba9c9fcc74f88fbcbe5",
+          "url": "https://github.com/liuchang925/jichuang-rk3568-vision/releases/download/datasets-v1/CRPD.zip.part003"
+        },
+        {
+          "name": "CRPD.zip.part004",
+          "offset_bytes": 5700000000,
+          "size_bytes": 1900000000,
+          "sha256": "3fc42d01d63f1638868719b37bc8a6fffe0ee6c29c14859346fb6df4cb53df2f",
+          "url": "https://github.com/liuchang925/jichuang-rk3568-vision/releases/download/datasets-v1/CRPD.zip.part004"
+        },
+        {
+          "name": "CRPD.zip.part005",
+          "offset_bytes": 7600000000,
+          "size_bytes": 1900000000,
+          "sha256": "174d7d44eb2fcb42fea30476acffbf4b4b5855edb13f52bba10b6f678adeab3c",
+          "url": "https://github.com/liuchang925/jichuang-rk3568-vision/releases/download/datasets-v1/CRPD.zip.part005"
+        },
+        {
+          "name": "CRPD.zip.part006",
+          "offset_bytes": 9500000000,
+          "size_bytes": 1900000000,
+          "sha256": "378bd8c796c12aa311fd2ff4a1d894101e687abeccb270a1ab835345292acbc7",
+          "url": "https://github.com/liuchang925/jichuang-rk3568-vision/releases/download/datasets-v1/CRPD.zip.part006"
+        },
+        {
+          "name": "CRPD.zip.part007",
+          "offset_bytes": 11400000000,
+          "size_bytes": 1900000000,
+          "sha256": "66930991796830f31ff304f352fbcbdc00cec816e5e94f0da39f8f103324bdf9",
+          "url": "https://github.com/liuchang925/jichuang-rk3568-vision/releases/download/datasets-v1/CRPD.zip.part007"
+        },
+        {
+          "name": "CRPD.zip.part008",
+          "offset_bytes": 13300000000,
+          "size_bytes": 1900000000,
+          "sha256": "c4a640ac0d00121df7cb774dc869e8e6fe9a023d6f4ab16cd9cce179d4bbe24c",
+          "url": "https://github.com/liuchang925/jichuang-rk3568-vision/releases/download/datasets-v1/CRPD.zip.part008"
+        },
+        {
+          "name": "CRPD.zip.part009",
+          "offset_bytes": 15200000000,
+          "size_bytes": 1900000000,
+          "sha256": "eec2b02a3a0e529e169e0be81903ff774165c0240706a0b0d7b84fa94c657ef6",
+          "url": "https://github.com/liuchang925/jichuang-rk3568-vision/releases/download/datasets-v1/CRPD.zip.part009"
+        },
+        {
+          "name": "CRPD.zip.part010",
+          "offset_bytes": 17100000000,
+          "size_bytes": 1900000000,
+          "sha256": "7875550df373295f5dad89783f58928949f803463948c5b2749b79edeb092752",
+          "url": "https://github.com/liuchang925/jichuang-rk3568-vision/releases/download/datasets-v1/CRPD.zip.part010"
+        },
+        {
+          "name": "CRPD.zip.part011",
+          "offset_bytes": 19000000000,
+          "size_bytes": 416634858,
+          "sha256": "7dcb8e4b9499999d944ae644822a8af07e3e58c02e28f2ec60a21d29993b13b5",
+          "url": "https://github.com/liuchang925/jichuang-rk3568-vision/releases/download/datasets-v1/CRPD.zip.part011"
+        }
+      ]
+    },
+    {
+      "name": "plate_pose.7z",
+      "size_bytes": 13128068242,
+      "sha256": "9c1415ac1a450451d4ce8375c354f4a2408df85ab5e7e7857e03eb352611524f",
+      "assets": [
+        {
+          "name": "plate_pose.7z.part001",
+          "offset_bytes": 0,
+          "size_bytes": 1900000000,
+          "sha256": "ff1b371115674547b49aa362a3c8b112ea48c61e6b0793dbce6d356e797fdc5c",
+          "url": "https://github.com/liuchang925/jichuang-rk3568-vision/releases/download/datasets-v1/plate_pose.7z.part001"
+        },
+        {
+          "name": "plate_pose.7z.part002",
+          "offset_bytes": 1900000000,
+          "size_bytes": 1900000000,
+          "sha256": "b256d31964c34932126bf5ff974a927be69e4570b429a8653edd21852f676ad3",
+          "url": "https://github.com/liuchang925/jichuang-rk3568-vision/releases/download/datasets-v1/plate_pose.7z.part002"
+        },
+        {
+          "name": "plate_pose.7z.part003",
+          "offset_bytes": 3800000000,
+          "size_bytes": 1900000000,
+          "sha256": "1d057a39c2a9dc69974eb8161728f107beb14854b47036c90eae0a1956241f71",
+          "url": "https://github.com/liuchang925/jichuang-rk3568-vision/releases/download/datasets-v1/plate_pose.7z.part003"
+        },
+        {
+          "name": "plate_pose.7z.part004",
+          "offset_bytes": 5700000000,
+          "size_bytes": 1900000000,
+          "sha256": "87c20dc2383f376aaa14e8fb58a134c8a18858e4b37168aaac8b93d4bb0be2e1",
+          "url": "https://github.com/liuchang925/jichuang-rk3568-vision/releases/download/datasets-v1/plate_pose.7z.part004"
+        },
+        {
+          "name": "plate_pose.7z.part005",
+          "offset_bytes": 7600000000,
+          "size_bytes": 1900000000,
+          "sha256": "190fe85ba6321ed7522b083bc4e35d13f14382747b57d0cad206f0060c8dd578",
+          "url": "https://github.com/liuchang925/jichuang-rk3568-vision/releases/download/datasets-v1/plate_pose.7z.part005"
+        },
+        {
+          "name": "plate_pose.7z.part006",
+          "offset_bytes": 9500000000,
+          "size_bytes": 1900000000,
+          "sha256": "3132726c384cac2b1ecf46e98f6afde61a53c66cd3934e13eec664c82a9a4aba",
+          "url": "https://github.com/liuchang925/jichuang-rk3568-vision/releases/download/datasets-v1/plate_pose.7z.part006"
+        },
+        {
+          "name": "plate_pose.7z.part007",
+          "offset_bytes": 11400000000,
+          "size_bytes": 1728068242,
+          "sha256": "10d402bb716e415b410a1c493cab680c3be2dc69f4f841817016888f41b2eee9",
+          "url": "https://github.com/liuchang925/jichuang-rk3568-vision/releases/download/datasets-v1/plate_pose.7z.part007"
+        }
+      ]
+    }
+  ]
+}
