@@ -4,12 +4,13 @@
 
 云服务器端配套一个运行在 Windows 电脑上的 **Device Agent**：它连接 RK3568、转发视频并执行云端下发的控制命令。Agent 与云平台共用 `云服务器/RK3568-Upper-Computer/` 中的代码，部署在不同机器上。
 
-> **当前源码范围**：本仓库已包含 RK3568 程序、云平台和 Windows Agent。当前目录中尚未找到 FPGA 的 Verilog/VHDL、工程配置和引脚约束文件，因此 FPGA 部分先说明已经由 RK3568 接收代码确认的协作方式与通信协议；芯片型号、综合工具、内部图像算法和烧录步骤需随 FPGA 工程补充。
+> **源码范围**：本仓库包含 RK3568 程序、云平台和 Windows Agent，不提供 FPGA 硬件工程。FPGA 对接协议依据现有接收端实现说明；整体硬件方案可参考下方三个比赛阶段的技术文档。
 
 ## 目录
 
 - [系统组成与运行链路](#系统组成与运行链路)
 - [源码目录](#源码目录)
+- [技术文档](#技术文档)
 - [RK3568 端](#rk3568-端)
 - [FPGA 端](#fpga-端)
 - [云服务器端](#云服务器端)
@@ -23,7 +24,7 @@
 | 部分 | 主要职责 | 对应代码 |
 | --- | --- | --- |
 | RK3568 端 | 视频采集、RGA 预处理、NPU 推理、车牌 OCR、本地显示、结果发布 | `RK3568/final/` |
-| FPGA 端 | 在串口协同模式下提供车牌候选 ROI，交给 RK3568 进一步识别 | 接收协议见 `RK3568/final/core/serial_io.py`；硬件工程待补充 |
+| FPGA 端 | 在串口协同模式下提供车牌候选 ROI，交给 RK3568 进一步识别 | 接收协议见 `RK3568/final/core/serial_io.py`；硬件工程不提供 |
 | 云服务器端 | 网页展示、身份认证、设备控制、事件与截图管理、媒体分发 | `云服务器/RK3568-Upper-Computer/` |
 | Windows Agent（云端配套） | 接收板端 JPEG 与元数据，通过 SSH 控制板端，通过 SRT 与 WSS 连接云端 | 同目录下的 `agent.py`、`backend/device_agent.py` |
 
@@ -43,6 +44,7 @@
 .
 ├── README.md
 ├── LICENSE
+├── docs/technical/                # 初赛、分赛区决赛、全国总决赛 PDF
 ├── RK3568/
 │   ├── README.md
 │   └── final/
@@ -71,7 +73,19 @@
         └── .env.example            # 配置示例
 ```
 
-FPGA 工程尚未出现在上述目录中。`fpga_ai.py` 和 `fpga_serial.py` 均为 **RK3568 上执行的 Python 程序**。
+本仓库不包含 FPGA 硬件工程。`fpga_ai.py` 和 `fpga_serial.py` 均为 **RK3568 上执行的 Python 程序**。
+
+## 技术文档
+
+三个阶段的原始 PDF 均已收录在 [`docs/technical/`](docs/technical/README.md)：
+
+| 阶段 | 文档 | 页数 |
+| --- | --- | --- |
+| 初赛 | [初赛技术文档](docs/technical/preliminary.pdf) | 53 |
+| 分赛区决赛 | [分赛区决赛技术文档](docs/technical/regional-final.pdf) | 96 |
+| 全国总决赛 | [全国总决赛技术文档](docs/technical/national-final.pdf) | 63 |
+
+文档包含硬件方案、算法设计、模型训练与量化、FPGA 模块、性能分析及仿真测试，展示不同比赛阶段的设计演进。历史方案、参数和性能记录以各文档对应阶段为准；当前程序接口以本仓库源码为准。
 
 ## RK3568 端
 
@@ -358,7 +372,7 @@ npm run build --prefix frontend
 
 ## 开源范围与许可证
 
-本仓库发布现有 RK3568、云平台与 Windows Agent 源码，以及已确认的 FPGA 对接协议。FPGA 硬件工程待补充。
+本仓库发布现有 RK3568、云平台与 Windows Agent 源码，以及已确认的 FPGA 对接协议。FPGA 硬件工程不提供。
 
 以下资源不纳入 Git，需要自行准备或在运行时生成：
 
