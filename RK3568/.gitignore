@@ -1,0 +1,61 @@
+# Python cache and test artifacts
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.o
+*.so
+
+# Virtual environments and local environment files
+.venv/
+venv/
+env/
+.env
+.env.*
+!.env.example
+
+# Image and video assets
+*.jpg
+*.jpeg
+*.png
+*.bmp
+*.gif
+*.webp
+*.mp4
+*.avi
+
+# Runtime outputs
+final/imgs/
+final/result_rknn/
+final/plate_crops/
+final/plate_coords.csv
+*.log
+
+# RKNN model binaries
+*.rknn
+final/rknn_models/*.rknn
+
+# Local tool state
+.claude/
+.agents/
+.codex/
+.superpowers/
+.git.backup-*/
+
+# Web manager runtime data
+rk3568_manager/db/
+*.db
+*.sqlite
+*.sqlite3
+
+# Editor and OS files
+.DS_Store
+*.swp
+*.swo
+.vscode/
+.idea/
+
+# 参考例程 (独立 git 仓, 不纳入本仓)
+rknpu_rk3568/

@@ -1,0 +1,38 @@
+#!/bin/sh
+set -eu
+
+: "${PUBLIC_IP:?PUBLIC_IP is required}"
+: "${ACME_EMAIL:?ACME_EMAIL is required}"
+
+/opt/certbot/bin/certbot certonly \
+  --non-interactive \
+  --agree-tos \
+  --email "$ACME_EMAIL" \
+  --preferred-profile shortlived \
+  --cert-name "$PUBLIC_IP" \
+  --webroot \
+  --webroot-path /var/www/acme \
+  --ip-address "$PUBLIC_IP" \
+  --keep-until-expiring
+
+install -d -m 0750 -o root -g turnserver /etc/turnserver/certs
+install -m 0640 -o root -g turnserver \
+  "/etc/letsencrypt/live/$PUBLIC_IP/fullchain.pem" \
+  /etc/turnserver/certs/fullchain.pem
+install -m 0640 -o root -g turnserver \
+  "/etc/letsencrypt/live/$PUBLIC_IP/privkey.pem" \
+  /etc/turnserver/certs/privkey.pem
+
+nginx -t
+systemctl reload nginx
+systemctl restart coturn
+
+if ! openssl x509 \
+  -checkend 172800 \
+  -noout \
+  -in "/etc/letsencrypt/live/$PUBLIC_IP/fullchain.pem"
+then
+  logger -p daemon.err -t rk3568-ip-cert \
+    "certificate for $PUBLIC_IP expires in less than 48 hours"
+  exit 1
+fi

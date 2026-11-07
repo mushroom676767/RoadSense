@@ -1,0 +1,8 @@
+[Unit]
+Description=Renew RK3568 short-lived public IP certificate
+After=network-online.target nginx.service
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/rk3568-manager/cert.env
+ExecStart=/usr/local/sbin/rk3568-renew-ip-cert

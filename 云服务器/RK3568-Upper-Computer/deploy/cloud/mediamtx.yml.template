@@ -1,0 +1,80 @@
+logLevel: info
+readTimeout: 10s
+writeTimeout: 10s
+writeQueueSize: 512
+udpMaxPayloadSize: 1200
+
+authMethod: internal
+authInternalUsers:
+  - user: __PUBLISH_USER__
+    pass: __PUBLISH_PASSWORD__
+    permissions:
+      - action: publish
+        path: ~^(plate_ai|plate_serial|people_redlight)$
+  - user: __READ_USER__
+    pass: __READ_PASSWORD__
+    permissions:
+      - action: read
+        path: ~^(plate_ai|plate_serial|people_redlight)$
+  - user: __ADMIN_USER__
+    pass: __ADMIN_PASSWORD__
+    ips: ["127.0.0.1", "::1"]
+    permissions:
+      - action: api
+      - action: metrics
+      - action: pprof
+
+api: true
+apiAddress: 127.0.0.1:9997
+metrics: true
+metricsAddress: 127.0.0.1:9998
+
+rtsp: false
+rtmp: false
+playback: false
+moq: false
+
+hls: true
+hlsAddress: 127.0.0.1:8888
+hlsEncryption: false
+hlsAllowOrigins: ["*"]
+hlsTrustedProxies: ["127.0.0.1/32"]
+hlsAlwaysRemux: true
+hlsVariant: lowLatency
+hlsSegmentCount: 7
+hlsSegmentDuration: 1s
+hlsPartDuration: 200ms
+hlsSegmentMaxSize: 20M
+hlsMuxerCloseAfter: 60s
+
+webrtc: true
+webrtcAddress: 127.0.0.1:8889
+webrtcEncryption: false
+webrtcAllowOrigins: ["*"]
+webrtcTrustedProxies: ["127.0.0.1/32"]
+webrtcLocalUDPAddress: :49199
+webrtcLocalTCPAddress: :49200
+webrtcIPsFromInterfaces: false
+webrtcAdditionalHosts: [__PUBLIC_IP__]
+webrtcICEServers2: []
+webrtcHandshakeTimeout: 10s
+webrtcTrackGatherTimeout: 2s
+
+srt: true
+srtAddress: :8890
+
+pathDefaults:
+  source: publisher
+  maxReaders: 24
+  alwaysAvailable: true
+  alwaysAvailableTracks:
+    - codec: H264
+  overridePublisher: true
+  srtPublishPassphrase: __SRT_PASSPHRASE__
+
+paths:
+  plate_ai:
+  plate_serial:
+  people_redlight:
+  continuity_canary:
+    maxReaders: 2

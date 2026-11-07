@@ -1,0 +1,30 @@
+[Unit]
+Description=RK3568 public traffic management platform
+After=network-online.target mediamtx.service coturn.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=rkmanager
+Group=rkmanager
+WorkingDirectory=/opt/rk3568-manager/current
+EnvironmentFile=/etc/rk3568-manager/cloud.env
+ExecStart=/opt/rk3568-manager/current/.venv/bin/gunicorn \
+    --workers 1 \
+    --threads 64 \
+    --bind 127.0.0.1:5000 \
+    --timeout 120 \
+    --access-logfile - \
+    --error-logfile - \
+    app:app
+Restart=always
+RestartSec=2
+TimeoutStopSec=15
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ReadWritePaths=/var/lib/rk3568-manager
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

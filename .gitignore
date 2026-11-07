@@ -1,0 +1,51 @@
+# Local archives and datasets (preserved on disk)
+*.zip
+*.7z
+*.tar
+*.tar.gz
+*.tgz
+CRPD/
+plate_pose/
+plate_pose_roi/
+
+# Secrets and generated deployment state
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa*
+id_ed25519*
+**/runtime/
+**/db/
+**/logs/
+*.db
+*.sqlite*
+*.log
+
+# Dependencies, caches, models and native build products
+.venv/
+venv/
+node_modules/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.rknn
+*.onnx
+*.pt
+*.pth
+*.so
+*.o
+**/frontend/dist/
+
+# Local tools and editor files
+.codex/
+.claude/
+.agents/
+.superpowers/
+.idea/
+.vscode/
+Thumbs.db
+.DS_Store
