@@ -4,7 +4,7 @@
 
 本项目将车牌识别、行人闯红灯检测和云端管理结合起来：RK3568 完成视频采集与 NPU 推理，FPGA 在协同模式下提供车牌候选区域，云端网页用于查看视频、管理事件和远程切换运行模式。
 
-[快速开始](#快速开始) · [部署与联调](docs/DEPLOYMENT.md) · [技术文档](#技术文档) · [数据集](#数据集) · [问题反馈](https://github.com/liuchang925/jichuang-rk3568-vision/issues)
+[快速开始](#快速开始) · [部署与联调](docs/DEPLOYMENT.md) · [技术文档](#技术文档) · [数据集](#数据集) · [问题反馈](https://github.com/mushroom676767/jichuang-rk3568-vision/issues)
 
 ## 项目亮点
 
@@ -50,7 +50,7 @@ Windows Agent 是云端方案的配套组件，运行在连接 RK3568 的 Window
 | --- | --- |
 | RK3568、云平台和 Agent 源码 | 本仓库，可通过 Git 克隆 |
 | 初赛、分赛区决赛、全国总决赛技术文档 | [`docs/technical/`](docs/technical/README.md) 中的原始 PDF |
-| CRPD、整帧 Pose、ROI Pose 数据包 | [Datasets v1 Release](https://github.com/liuchang925/jichuang-rk3568-vision/releases/tag/datasets-v1) 附件 |
+| CRPD、整帧 Pose、ROI Pose 数据包 | [Datasets v1 Release](https://github.com/mushroom676767/jichuang-rk3568-vision/releases/tag/datasets-v1) 附件 |
 | FPGA 硬件工程、模型权重 | 不随本仓库提供 |
 
 ## 快速开始
@@ -58,7 +58,7 @@ Windows Agent 是云端方案的配套组件，运行在连接 RK3568 的 Window
 ### 1. 获取源码
 
 ```bash
-git clone https://github.com/liuchang925/jichuang-rk3568-vision.git
+git clone https://github.com/mushroom676767/jichuang-rk3568-vision.git
 cd jichuang-rk3568-vision
 ```
 
@@ -157,7 +157,7 @@ python3 fpga_ai.py \
 
 ## 数据集
 
-数据包总大小为 **32,906,449,741 字节（32.91 GB）**，通过 [Datasets v1 Release](https://github.com/liuchang925/jichuang-rk3568-vision/releases/tag/datasets-v1) 发布。
+数据包总大小为 **32,906,449,741 字节（32.91 GB）**，通过 [Datasets v1 Release](https://github.com/mushroom676767/jichuang-rk3568-vision/releases/tag/datasets-v1) 发布。
 
 | 数据包 | 大小 | 附件数 | 内容 |
 | --- | --- | --- | --- |
@@ -238,7 +238,7 @@ python -m unittest discover -s datasets/tests -v
 
 欢迎提交文档修正、问题复现、兼容性改进和代码修复：
 
-1. 先通过 [Issues](https://github.com/liuchang925/jichuang-rk3568-vision/issues) 说明问题或修改目标。
+1. 先通过 [Issues](https://github.com/mushroom676767/jichuang-rk3568-vision/issues) 说明问题或修改目标。
 2. Fork 仓库，创建自己的修改分支，保持一次提交围绕一个问题。
 3. 运行与修改相关的测试，必要时补充能验证行为的测试。
 4. 提交 Pull Request，说明改动原因、验证结果和实机测试环境；未完成的硬件验证请注明。
@@ -247,7 +247,7 @@ python -m unittest discover -s datasets/tests -v
 
 ## 问题反馈
 
-请在 [GitHub Issues](https://github.com/liuchang925/jichuang-rk3568-vision/issues) 提交问题或建议。硬件相关问题请附上板卡与系统镜像、RKNN/驱动版本、实际启动命令、复现步骤、预期结果和实际结果。
+请在 [GitHub Issues](https://github.com/mushroom676767/jichuang-rk3568-vision/issues) 提交问题或建议。硬件相关问题请附上板卡与系统镜像、RKNN/驱动版本、实际启动命令、复现步骤、预期结果和实际结果。
 
 先排查设备节点、模型路径与校验值、串口参数、Agent 地址/Token，以及媒体服务状态。更完整的[常见问题](docs/DEPLOYMENT.md#常见问题)可用于定位。
 

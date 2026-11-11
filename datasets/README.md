@@ -1,6 +1,6 @@
 # 数据集下载
 
-数据集作为 [GitHub Release 附件](https://github.com/liuchang925/jichuang-rk3568-vision/releases/tag/datasets-v1) 发布，版本为 `datasets-v1`。压缩包不进入 Git 提交历史。
+数据集作为 [GitHub Release 附件](https://github.com/mushroom676767/jichuang-rk3568-vision/releases/tag/datasets-v1) 发布，版本为 `datasets-v1`。压缩包不进入 Git 提交历史。
 
 三个原始压缩包合计 **32,906,449,741 字节（32.91 GB / 30.65 GiB）**。GitHub 单个附件必须小于 2 GiB，因此两个大文件按每卷最多 1,900,000,000 字节进行二进制分卷；还原后与原文件逐字节一致。
 
